@@ -44,8 +44,6 @@ namespace Lucene.Net.Analysis.Hyphenation
             {
                 _terms.Enqueue(newWord);
             }
-
-            SetNextTerm();
             return true;
         }
     }
