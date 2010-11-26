@@ -12,14 +12,11 @@ namespace Lucene.Net.Analysis.Hyphenation
         public IEnumerable<HyphenatorPattern> Patterns { get; set; }
         public HyphenationTreeNode Tree { get { return _tree ?? (_tree = new HyphenationTreeNode(Patterns)); } }
 
-        public IList<WordPart> HyphenateWord(string word)
+        private IList<int> Score(string data)
         {
-            if (word.Length < (MinimumPrefix + MinimumSuffix)) return new[] { new WordPart(0, word.Length, word) };
+            var points = new int[data.Length];
 
-            string data = "." + word + ".";
-            int[] points = new int[data.Length];
-
-            for(var i=0; i<data.Length; ++i)
+            for (var i = 0; i < data.Length; ++i)
             {
                 var node = Tree;
                 var lastNode = node;
@@ -38,22 +35,38 @@ namespace Lucene.Net.Analysis.Hyphenation
                     points[i + p] = a > b ? a : b;
                 }
             }
+            return points;
+        }
 
-            int w;
+        private bool InsideMinimumLength(int len, int i)
+        {
+            if(i <= MinimumPrefix) return true;
+            if(i >= (len - MinimumSuffix)) return true;
+            return false;
+        }
+
+        public IList<WordPart> HyphenateWord(string word)
+        {
+            if (word.Length < (MinimumPrefix + MinimumSuffix)) return new[] { new WordPart(0, word.Length, word) };
+
+            string data = "." + word + ".";
+            var points = Score(data);
+
+            int start = 0;
             var output = new StringBuilder();
             var result = new List<WordPart>();
-            int start = 0;
-            for (w = 1; w < points.Length - 1; ++w)
+            for (int i = 1; i < points.Count - 1; ++i)
             {
-                if(points[w] % 2 != 0 && w > MinimumPrefix && w < (points.Length - MinimumSuffix))
+                var skip = points[i]%2 != 0;
+                if (skip && !InsideMinimumLength(points.Count, i))
                 {
-                    result.Add(new WordPart(start, w - 1, output.ToString()));
+                    result.Add(new WordPart(start, i - 1, output.ToString()));
                     output.Clear();
-                    start = w - 1;
+                    start = i - 1;
                 }
-                output.Append(data[w]);
+                output.Append(data[i]);
             }
-            result.Add(new WordPart(start, points.Length - 2, output.ToString()));
+            result.Add(new WordPart(start, points.Count - 2, output.ToString()));
             return result;
         }
     }
