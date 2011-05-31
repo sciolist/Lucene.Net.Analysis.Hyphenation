@@ -1,5 +1,9 @@
-
 *ReSharper*
-bin
-obj
+*.vspscc
+*.user
+*.suo
+*.sln.cache
+[Bb]in
+[Oo]bj
+FrameworkLib/*
 tmp
